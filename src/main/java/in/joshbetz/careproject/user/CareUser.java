@@ -14,9 +14,12 @@ public class CareUser {
     private String password;
     private String userRole;
 
-    public CareUser(String username, String password, String userRole) {
+    private ProfilePic profilePic;
+
+    public CareUser(String username, String password, String userRole, ProfilePic profilePic) {
         this.username = username;
         this.password = password;
         this.userRole = userRole;
+        this.profilePic = profilePic;
     }
 }
