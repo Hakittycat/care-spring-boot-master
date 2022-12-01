@@ -6,9 +6,13 @@ import in.joshbetz.careproject.request.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.ArrayList;
+import java.util.Optional;
 
 
 @RestController
@@ -49,6 +53,32 @@ public class UserController {
         return ResponseEntity.ok(new CheckAuthResponse(valid));
     }
 
+    @PostMapping("/uploadphoto")
+    public ResponseEntity<?> uploadPhoto(@RequestBody UploadPhotoRequest request) {
+        UserPhoto photo = new UserPhoto(request.getFilename(), request.getDescription(), request.getPhotoType(), request.getBase64());
+        CareUser user = userRepository.findByUsername(request.getUsername()).orElseThrow(() -> new RequestException("There was no user found with that username!"));
+
+        user.AddPhoto(photo);
+        userRepository.save(user);
+
+        return ResponseEntity.ok(new UploadPhotoResponse("Photo upload successful!"));
+    }
+
+    @PostMapping("/getphotos")
+    public ResponseEntity<?> getPhotos(@RequestBody GetPhotosRequest request) {
+        CareUser user = userRepository.findByUsername(request.getUsername()).orElseThrow(() -> new RequestException("There was no user found with that username!"));
+
+        if (!user.getUserPhotos().containsKey(request.getPhotoType()))
+            throw new RequestException("Photo type invalid :(");
+
+        ArrayList<UserPhoto> photos = user.getUserPhotos().get(request.getPhotoType());
+        ArrayList<ResponsePhoto> result = new ArrayList<>();
+        for (UserPhoto p : photos) {
+            result.add(new ResponsePhoto(p));
+        }
+        return ResponseEntity.ok(new GetPhotosResponse(result));
+    }
+
     private CareUser createUser(RegisterRequest request) {
         String username = request.getUsername();
         UserRole type = UserRole.getFromName(request.getUserRole());
@@ -56,6 +86,6 @@ public class UserController {
             type = UserRole.USER;
         }
         String encodedPassword = passwordEncoder.encode(request.getPassword());
-        return new CareUser(username, encodedPassword, type.name(), request.getProfilePic());
+        return new CareUser(username, encodedPassword, type.name());
     }
 }
